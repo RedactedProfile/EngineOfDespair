@@ -42,6 +42,8 @@
 #include <algorithm>
 #include <vector>
 #include <iostream>
+#include <string>
+#include <map>
 #include <filesystem>
 #include <memory>
 #include <cmath>
@@ -54,6 +56,8 @@
 #include <stdexcept>
 #include <system_error>
 #include <tuple>
+#include <sstream>
+#include <fstream>
 
 #ifdef _DEBUG
 #include <dxgidebug.h>

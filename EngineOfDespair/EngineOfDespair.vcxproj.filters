@@ -28,6 +28,7 @@
     </ClCompile>
     <ClCompile Include="mod_dem.ixx" />
     <ClCompile Include="mod_render.ixx" />
+    <ClCompile Include="mod_strtools.ixx" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

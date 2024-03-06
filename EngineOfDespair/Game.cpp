@@ -41,7 +41,7 @@ void Game::Initialize(HWND window, int width, int height)
 //#ifdef _DEBUG
     std::cout << "Setting up testmesh " << std::endl;
     std::unique_ptr<DE::Render::DEM::Model> testmesh;
-    DE::Render::DEM::Model::CreateTestModel(testmesh);
+    DE::Render::DEM::LoadFromFile("C:\\cube2.dem", testmesh);
     std::cout << "Done setting up testmesh" << std::endl;
 //#endif
 }
