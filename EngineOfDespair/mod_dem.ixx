@@ -65,8 +65,17 @@ export namespace DE::Render::DEM {
 
     class Model {
     public:
+        uint16_t
+            version = 0,
+            num_meshes = 0,
+            num_joints = 0,
+            num_weights = 0;
+
+        std::string 
+            name = "NO_NAME";
+
         std::vector<Mesh> 
-            meshes;
+            meshes = {};
 
         // Model Transformation 
         XMFLOAT3 
@@ -122,6 +131,8 @@ export namespace DE::Render::DEM {
         
         enum class MODE { HEADER = 1, MODEL, ANIM };
         MODE _mode = MODE::HEADER;
+        enum class SUBMODE { NONE = 1, MESH, SEQUENCE };
+        SUBMODE _submode = SUBMODE::NONE;
 
         enum class TOKEN { COMMENT, VERSION, 
             MODEL, 
@@ -188,11 +199,43 @@ export namespace DE::Render::DEM {
                 std::cout << line << std::endl;
 
                 // Read token, determine mode
-                if (_modelTokenMap.find(parts[0]) != _modelTokenMap.end()) {
-                    if (_modelTokenMap[parts[0]] == TOKEN::MODEL) {
-                        // switch to model mode
-                        _mode = MODE::MODEL;
+                if (_machineTokenMap.find(parts[0]) != _machineTokenMap.end()) {
+                    switch (_machineTokenMap[parts[0]])
+                    {
+                    case TOKEN::COMMENT:
+                        // if a comment line, move on 
+                        continue;
+                        break;
+                    case TOKEN::VERSION:
+                        out->version = std::stoi(parts[1]);
+                        break;
+                    default:
+                        break;
                     }
+                    continue; // skip the rest of the loop
+                }
+
+                if (_modelTokenMap.find(parts[0]) != _modelTokenMap.end()) {
+                    switch (_modelTokenMap[parts[0]])
+                    {
+                    case TOKEN::MODEL:
+                        _mode = MODE::MODEL;
+                        out->name = parts[1];
+                        break;
+                    case TOKEN::JOINTS_NUM:
+                        out->num_joints = std::stoi(parts[1]);
+                        break;
+                    case TOKEN::MESHES_NUM:
+                        out->num_meshes = std::stoi(parts[1]);
+                        break;
+                    case TOKEN::WEIGHTS_NUM:
+                        out->num_weights = std::stoi(parts[1]);
+                        break;
+                    default:
+                        break;
+                    }
+
+                    continue; // skip the rest of the loop
                 }
                 
                 // do something with that mode
