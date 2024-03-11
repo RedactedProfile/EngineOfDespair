@@ -20,14 +20,27 @@ export namespace DE::Render::DEM {
         XMFLOAT4 color;
     };
 
+    class Triangle {
+    public:
+        uint64_t id;
+        XMINT3 tri;
+    };
+
     class Mesh {
     public:
         std::string
             name = "NONAME";
 
+        uint32_t
+            num_verts = 0,
+            num_tris = 0;
+
         // Mesh Storage
         std::vector<Vertex> 
             verts = {};
+
+        std::vector<Triangle>
+            tris = {};
 
         std::vector<Material> 
             materials = {};
@@ -101,6 +114,11 @@ export namespace DE::Render::DEM {
                 return;
 
             meshes.push_back(std::move(_newMesh));
+        }
+
+        uint32_t createMesh() {
+            meshes.push_back(std::make_unique<Mesh>());
+            return meshes.size() - 1;
         }
 
         /// <summary>
@@ -200,6 +218,9 @@ export namespace DE::Render::DEM {
         // what might be better is to let the model instance create the mesah instance and we just get the ref to work with
         // this way we wont need to deal with cleanup and the mesh is just assumed complete
         //auto active_mesh = out->createMesh();
+        uint32_t active_mesh_idx = 0;
+        std::unique_ptr<Mesh>* active_mesh;
+
 
         std::ifstream file(filepath);
 
@@ -242,6 +263,7 @@ export namespace DE::Render::DEM {
                         break;
                     case TOKEN::MESHES_NUM:
                         out->num_meshes = std::stoi(parts[1]);
+                        out->meshes.reserve(out->num_meshes);
                         break;
                     case TOKEN::WEIGHTS_NUM:
                         out->num_weights = std::stoi(parts[1]);
@@ -250,16 +272,35 @@ export namespace DE::Render::DEM {
 
                     case TOKEN::MESH:
                         _submode = SUBMODE::MESH;
-                        // add the activly modified mesh instance to the model. However, there must be at least a vert to be considered a "mesh"
-                        out->addMesh(active_mesh);
-                        active_mesh = std::make_unique<Mesh>();
-                        active_mesh->name = parts[1];
+                        active_mesh_idx = out->createMesh();
+                        active_mesh = &out->meshes.at(active_mesh_idx);
+                        active_mesh->get()->name = parts[1];
                         break;
                     case TOKEN::MATERIAL:
+                        //active_mesh->get()->materials.push_back()
                         break;
                     case TOKEN::VERTS_NUM:
+                        active_mesh->get()->num_verts = std::stoi(parts[1]);
+                        active_mesh->get()->verts.reserve(active_mesh->get()->num_verts);
                         break;
                     case TOKEN::VERT:
+                        active_mesh->get()->verts.push_back({
+                            std::stoul(parts[1]),
+                            XMFLOAT3{ std::stof(parts[2]), std::stof(parts[3]), std::stof(parts[4]) },
+                            XMFLOAT3{ std::stof(parts[5]), std::stof(parts[6]), std::stof(parts[7]) },
+                            XMFLOAT2{ std::stof(parts[8]), std::stof(parts[9]) },
+                            XMFLOAT4{ std::stof(parts[10]), std::stof(parts[11]), std::stof(parts[12]), 1.0f }
+                        });
+                        break;
+                    case TOKEN::TRIS_NUM:
+                        active_mesh->get()->num_tris = std::stoi(parts[1]);
+                        active_mesh->get()->tris.reserve(active_mesh->get()->num_tris);
+                        break;
+                    case TOKEN::TRI:
+                        active_mesh->get()->tris.push_back({ 
+                            std::stoul(parts[1]),
+                            XMINT3{ std::stoi(parts[2]), std::stoi(parts[3]), std::stoi(parts[4]) }
+                        });
                         break;
                     default:
                         break;
@@ -275,7 +316,7 @@ export namespace DE::Render::DEM {
         }
 
         // if we've reached end of file but we were still building a mesh, add it
-        out->addMesh(active_mesh);
+        //out->addMesh(active_mesh);
 
         file.close();
     }
