@@ -22,12 +22,15 @@ export namespace DE::Render::DEM {
 
     class Mesh {
     public:
+        std::string
+            name = "NONAME";
+
         // Mesh Storage
         std::vector<Vertex> 
-            verts;
+            verts = {};
 
         std::vector<Material> 
-            materials;
+            materials = {};
 
         // Cache Storage 
         uint64_t 
@@ -65,7 +68,7 @@ export namespace DE::Render::DEM {
 
     class Model {
     public:
-        uint16_t
+        uint32_t
             version = 0,
             num_meshes = 0,
             num_joints = 0,
@@ -74,7 +77,7 @@ export namespace DE::Render::DEM {
         std::string 
             name = "NO_NAME";
 
-        std::vector<Mesh> 
+        std::vector<std::unique_ptr<Mesh>> 
             meshes = {};
 
         // Model Transformation 
@@ -92,6 +95,13 @@ export namespace DE::Render::DEM {
 
         void DrawImmediate() {}
         void DrawInBatch() {}
+
+        void addMesh(std::unique_ptr<Mesh> &_newMesh) {
+            if (_newMesh->verts.size() <= 0)
+                return;
+
+            meshes.push_back(std::move(_newMesh));
+        }
 
         /// <summary>
         /// Reads a DEM file 
@@ -186,6 +196,11 @@ export namespace DE::Render::DEM {
         
         out = std::make_unique<Model>();
 
+        //auto active_mesh = std::make_unique<Mesh>();
+        // what might be better is to let the model instance create the mesah instance and we just get the ref to work with
+        // this way we wont need to deal with cleanup and the mesh is just assumed complete
+        //auto active_mesh = out->createMesh();
+
         std::ifstream file(filepath);
 
         // Phase 1: Read the data from file
@@ -231,6 +246,21 @@ export namespace DE::Render::DEM {
                     case TOKEN::WEIGHTS_NUM:
                         out->num_weights = std::stoi(parts[1]);
                         break;
+
+
+                    case TOKEN::MESH:
+                        _submode = SUBMODE::MESH;
+                        // add the activly modified mesh instance to the model. However, there must be at least a vert to be considered a "mesh"
+                        out->addMesh(active_mesh);
+                        active_mesh = std::make_unique<Mesh>();
+                        active_mesh->name = parts[1];
+                        break;
+                    case TOKEN::MATERIAL:
+                        break;
+                    case TOKEN::VERTS_NUM:
+                        break;
+                    case TOKEN::VERT:
+                        break;
                     default:
                         break;
                     }
@@ -243,6 +273,9 @@ export namespace DE::Render::DEM {
                 line_num++;
             }
         }
+
+        // if we've reached end of file but we were still building a mesh, add it
+        out->addMesh(active_mesh);
 
         file.close();
     }
