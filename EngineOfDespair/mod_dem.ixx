@@ -121,15 +121,13 @@ export namespace DE::Render::DEM {
             return meshes.size() - 1;
         }
 
-        /// <summary>
-        /// Reads a DEM file 
-        /// </summary>
-        /// <param name="filepath"></param>
-        //static void LoadFromFile(std::filesystem::path filepath, std::unique_ptr<Model> &out) {
-        //    out = std::make_unique<Model>();
-
-
-        //}
+        void Cache() {
+            // loop through the models and invoke their cache 
+            for (int i = 0; i < meshes.size(); ++i)
+            {
+                meshes.at(i)->Cache();
+            }
+        }
 
 //#ifdef _DEBUG
         static void CreateTestModel(std::unique_ptr<Model> &out) {
@@ -155,6 +153,33 @@ export namespace DE::Render::DEM {
     };
 
 
+    /**
+     * @brief Loads a Model object from a file
+     *
+     * This function takes a file path as input and attempts to load a Model object from it.
+     * The loaded Model is then passed back through a reference to a unique pointer. This approach
+     * allows for efficient transfer of ownership while ensuring the caller has access to the
+     * loaded Model. If the function fails to load the Model, the unique_ptr remains empty.
+     *
+     * @param[in] filepath The filesystem path to the file from which the Model is to be loaded.
+     *                     It uses std::filesystem::path for flexibility with filesystem operations.
+     * @param[out] out A reference to a std::unique_ptr<Model> that will hold the loaded Model upon
+     *                 successful completion. If the loading fails, this will be an empty unique_ptr.
+     *
+     * @note This function overwrites the contents of 'out' without freeing any existing resources it might be holding.
+     *       Ensure that 'out' is either empty or any existing resource it holds is no longer needed before calling this function.
+     *
+     * @exception std::runtime_error Thrown if the file cannot be opened or read, or if the file format is incorrect.
+     *
+     * Example usage:
+     * @code
+     * std::unique_ptr<Model> modelPtr;
+     * LoadFromFile("path/to/model/file", modelPtr);
+     * if (modelPtr) {
+     *     // Use the loaded model
+     * }
+     * @endcode
+     */
     void LoadFromFile(std::filesystem::path filepath, std::unique_ptr<Model> &out) {
         
         enum class MODE { HEADER = 1, MODEL, ANIM };
@@ -319,5 +344,8 @@ export namespace DE::Render::DEM {
         //out->addMesh(active_mesh);
 
         file.close();
+        
+        // With all the data gathered, we can send to the model to the GPU now
+        out->Cache();
     }
 };
